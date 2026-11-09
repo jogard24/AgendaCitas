@@ -1,15 +1,17 @@
+import json
+from pathlib import Path
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from app.services.ciclo_vida import clasificar_paciente
-from app.core.database import get_db_connection
+
+from Backend.app.services.ciclo_vida import clasificar_paciente
+from Backend.app.core.database import get_db_connection
 
 app = FastAPI(
     title="API Agenda de Citas & Semaforización",
     version="1.0.0"
 )
 
-# Permitir que el Frontend (Streamlit) se comunique con el Backend sin bloqueos
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -18,17 +20,24 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Esquema para recibir la solicitud de clasificación
+def obtener_estados_config():
+    base_dir = Path(__file__).resolve().parent.parent.parent
+    json_path = base_dir / "config" / "estados_asistencia.json"
+    if not json_path.exists():
+        json_path = base_dir.parent / "config" / "estados_asistencia.json"
+        
+    with open(json_path, "r", encoding="utf-8") as f:
+        return json.load(f)["estados"]
+
 class SolicitudClasificacion(BaseModel):
-    fecha_nacimiento: str  # Formato YYYY-MM-DD
+    fecha_nacimiento: str
 
 @app.get("/")
 def home():
-    return {"mensaje": "API de Citas funcionando correctamente "}
+    return {"mensaje": "API de Citas funcionando correctamente"}
 
 @app.post("/api/v1/pacientes/clasificar")
 def endpoint_clasificar(datos: SolicitudClasificacion):
-    """Endpoint para obtener la clasificación por grupo etario según el JSON."""
     try:
         resultado = clasificar_paciente(datos.fecha_nacimiento)
         return {"status": "success", "data": resultado}
@@ -37,55 +46,31 @@ def endpoint_clasificar(datos: SolicitudClasificacion):
 
 @app.get("/api/v1/health-db")
 def probar_base_datos():
-    """Endpoint para verificar el estado de la conexión a Firebird."""
     try:
         conn = get_db_connection()
         conn.close()
         return {"status": "ok", "base_datos": "Conectada a Firebird SALUSDB"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error en BD: {str(e)}")
-    
-    # Cargar estados desde el JSON de semaforización
-import json
 
-def obtener_estados_config():
-    with open("config/estados_asistencia.json", "r", encoding="utf-8") as f:
-        return json.load(f)["estados"]
-
+# --- ESTE ES EL ENDPOINT QUE FALTA EN TU SWAGGER ---
 @app.get("/api/v1/citas/agenda")
 def obtener_agenda_semaforizada():
-    """Retorna la lista de citas con el color y estado de asistencia cargados desde el JSON."""
-    estados = {e["id"]: e for e in obtener_estados_config()}
-    
-    # Datos de prueba estructurados (listos para mapear con la BD Firebird)
-    citas_ejemplo = [
-        {
-            "id": 1,
-            "paciente": "Carlos Mendoza",
-            "grupo_etario": "Vejez",
-            "fecha_hora": "2026-11-06 08:00 AM",
-            "estado_id": "asistio"
-        },
-        {
-            "id": 2,
-            "paciente": "Lucía Gómez",
-            "grupo_etario": "Primera Infancia",
-            "fecha_hora": "2026-11-06 09:00 AM",
-            "estado_id": "no_asistio"
-        },
-        {
-            "id": 3,
-            "paciente": "Andrés Pérez",
-            "grupo_etario": "Juventud",
-            "fecha_hora": "2026-11-06 10:30 AM",
-            "estado_id": "pendiente"
-        }
-    ]
-    
-    # Inyectar los colores del JSON según el estado
-    for cita in citas_ejemplo:
-        info_estado = estados.get(cita["estado_id"], {})
-        cita["estado_nombre"] = info_estado.get("nombre", "Desconocido")
-        cita["color_hex"] = info_estado.get("color_hex", "#cccccc")
+    try:
+        estados = {e["id"]: e for e in obtener_estados_config()}
         
-    return {"status": "success", "citas": citas_ejemplo}
+        citas_ejemplo = [
+            {"id": 1, "paciente": "Carlos Mendoza", "grupo_etario": "Vejez", "fecha_hora": "2026-11-06 08:00 AM", "estado_id": "asistio"},
+            {"id": 2, "paciente": "Lucía Gómez", "grupo_etario": "Primera Infancia", "fecha_hora": "2026-11-06 09:00 AM", "estado_id": "no_asistio"},
+            {"id": 3, "paciente": "Andrés Pérez", "grupo_etario": "Juventud", "fecha_hora": "2026-11-06 10:30 AM", "estado_id": "pendiente"},
+            {"id": 4, "paciente": "Mariana Ríos", "grupo_etario": "Adultez", "fecha_hora": "2026-11-06 11:15 AM", "estado_id": "reagendado"}
+        ]
+        
+        for cita in citas_ejemplo:
+            info_estado = estados.get(cita["estado_id"], {})
+            cita["estado_nombre"] = info_estado.get("nombre", "Desconocido")
+            cita["color_hex"] = info_estado.get("color_hex", "#cccccc")
+            
+        return {"status": "success", "citas": citas_ejemplo}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error al procesar agenda: {str(e)}")

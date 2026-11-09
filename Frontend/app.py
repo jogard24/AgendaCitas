@@ -5,12 +5,12 @@ from datetime import date
 # Configuración de la página (Título e icono en la pestaña del navegador)
 st.set_page_config(page_title="Agenda de Citas & Semaforización", layout="wide", page_icon="")
 
-st.title(" Sistema de Gestión de Citas")
+st.title("Sistema de Gestión de Citas")
 st.caption("Módulo de Clasificación de Pacientes y Semaforización")
 
 st.divider()
 
-# Sección 1: Formulario interactivo
+# Sección 1: Formulario interactivo de Clasificación
 st.subheader(" Clasificación de Paciente por Ciclo de Vida")
 
 col1, col2 = st.columns([1, 2])
@@ -23,24 +23,19 @@ with col1:
     )
     
     botan_consultar = st.button(" Clasificar Paciente", use_container_width=True)
-    print(f"Botón presionado: {botan_consultar}, Fecha seleccionada: {fecha_nacimiento}")
 
-# Sección 2: Respuesta y visualización
+# Sección 2: Respuesta de la Clasificación
 with col2:
     if botan_consultar:
-        # Preparamos la petición HTTP para enviarla a nuestra "cocina" (FastAPI)
-        url_api = "http://127.0.0.1:8000/api/v1/pacientes/clasificar"
-        payload = {"fecha_nacimiento": fecha_nacimiento.strftime("%Y-%m-%d")}
-        respuesta = requests.post(url_api, json=payload)
-        
         try:
+            url_api = "http://127.0.0.1:8000/api/v1/pacientes/clasificar"
+            payload = {"fecha_nacimiento": fecha_nacimiento.strftime("%Y-%m-%d")}
             respuesta = requests.post(url_api, json=payload)
             
             if respuesta.status_code == 200:
                 datos = respuesta.json()["data"]
                 
-                # Pintamos el resultado en pantalla de forma bonita
-                st.success(f"¡Pacientes clasificado con éxito!")
+                st.success("¡Paciente clasificado con éxito!")
                 
                 c1, c2, c3 = st.columns(3)
                 c1.metric("Edad Calculada", f"{datos['edad']} años")
@@ -50,15 +45,18 @@ with col2:
                 if datos['requiere_acudiente']:
                     st.warning(" **Atención:** Este paciente requiere la presencia de un acudiente obligatorio.")
                 else:
-                    st.info("ℹ El paciente puede asistir sin acudiente.")
+                    st.info(" El paciente puede asistir sin acudiente.")
             else:
-                st.error("Ocurrió un error al procesar en la API.")
+                st.error(f"Error {respuesta.status_code} desde la API: {respuesta.text}")
                 
         except Exception as e:
             st.error(f"No se pudo conectar con el Backend (FastAPI). ¿Está encendido uvicorn? Error: {e}")
-            
-            st.divider()
+    else:
+        st.info(" Selecciona una fecha de nacimiento y presiona 'Clasificar Paciente'.")
 
+st.divider()
+
+# Sección 3: Agenda Semaforizada
 st.subheader(" Agenda de Citas y Control de Asistencia (Semaforización)")
 
 if st.button(" Cargar Citas Agendadas", use_container_width=False):
@@ -78,18 +76,19 @@ if st.button(" Cargar Citas Agendadas", use_container_width=False):
                         border-radius: 10px;
                         color: white;
                         font-family: sans-serif;
-                        margin-bottom: 10px;">
+                        margin-bottom: 10px;
+                        box-shadow: 0 4px 6px rgba(0,0,0,0.15);">
                         <h4 style="margin:0; color: white;">{cita['paciente']}</h4>
                         <p style="margin:5px 0 0 0; font-size: 0.9em;"><b>Grupo:</b> {cita['grupo_etario']}</p>
                         <p style="margin:2px 0 0 0; font-size: 0.85em;"><b>Hora:</b> {cita['fecha_hora']}</p>
-                        <hr style="border: 0.5px solid rgba(255,255,255,0.3);">
-                        <span style="background: rgba(0,0,0,0.2); padding: 4px 8px; border-radius: 5px; font-weight: bold; font-size: 0.8em;">
+                        <hr style="border: 0.5px solid rgba(255,255,255,0.3); margin: 8px 0;">
+                        <span style="background: rgba(0,0,0,0.25); padding: 4px 8px; border-radius: 5px; font-weight: bold; font-size: 0.8em; display: inline-block;">
                             {cita['estado_nombre']}
                         </span>
                     </div>
                     """
                     st.markdown(html_card, unsafe_allow_html=True)
         else:
-            st.error("No se pudo obtener la agenda de citas.")
+            st.error(f"No se pudo obtener la agenda de citas (Código {res.status_code}): {res.text}")
     except Exception as e:
         st.error(f"Error al conectar con la API: {e}")
