@@ -1,0 +1,48 @@
+{
+  "version": "1.0",
+  "descripcion": "Clasificación de ciclos de vida de pacientes",
+  "grupos_etarios": [
+    {
+      "id": "primera_infancia",
+      "nombre": "Primera Infancia",
+      "rango_edad_anual": { "min": 0, "max": 5 },
+      "duracion_cita_minutos": 45,
+      "requiere_acudiente": true
+    },
+    {
+      "id": "infancia",
+      "nombre": "Infancia",
+      "rango_edad_anual": { "min": 6, "max": 11 },
+      "duracion_cita_minutos": 30,
+      "requiere_acudiente": true
+    },
+    {
+      "id": "adolescencia",
+      "nombre": "Adolescencia",
+      "rango_edad_anual": { "min": 12, "max": 17 },
+      "duracion_cita_minutos": 30,
+      "requiere_acudiente": false
+    },
+    {
+      "id": "juventud",
+      "nombre": "Juventud",
+      "rango_edad_anual": { "min": 18, "max": 28 },
+      "duracion_cita_minutos": 20,
+      "requiere_acudiente": false
+    },
+    {
+      "id": "adulteaz",
+      "nombre": "Adultez",
+      "rango_edad_anual": { "min": 29, "max": 59 },
+      "duracion_cita_minutos": 20,
+      "requiere_acudiente": false
+    },
+    {
+      "id": "vejez",
+      "nombre": "Vejez",
+      "rango_edad_anual": { "min": 60, "max": 120 },
+      "duracion_cita_minutos": 40,
+      "requiere_acudiente": false
+    }
+  ]
+}

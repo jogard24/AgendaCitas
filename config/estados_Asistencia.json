@@ -1,0 +1,30 @@
+{
+  "version": "1.0",
+  "descripcion": "Configuración de semaforización de citas",
+  "estados": [
+    {
+      "id": "asistio",
+      "nombre": "Asistió",
+      "color_hex": "#28a745",
+      "color_nombre": "Verde"
+    },
+    {
+      "id": "no_asistio",
+      "nombre": "No asistió",
+      "color_hex": "#dc3545",
+      "color_nombre": "Rojo"
+    },
+    {
+      "id": "pendiente",
+      "nombre": "Pendiente",
+      "color_hex": "#ffc107",
+      "color_nombre": "Amarillo"
+    },
+    {
+      "id": "reagendado",
+      "nombre": "Reagendado / Con excusa",
+      "color_hex": "#17a2b8",
+      "color_nombre": "Azul"
+    }
+  ]
+}
